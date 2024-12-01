@@ -1,4 +1,3 @@
-use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -16,8 +15,8 @@ impl User {
             id: id,
             biz_id: Uuid::new_v4().to_string(),
             name: "John Doe".to_string(),
-            email: "test".to_string()
-        }   
+            email: "test".to_string(),
+        }
     }
 
     pub fn create(user: User) -> User {
