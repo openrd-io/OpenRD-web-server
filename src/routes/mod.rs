@@ -1,16 +1,23 @@
-use actix_web::{web, App, HttpResponse, Responder};
-use crate::handlers::auth::Auth;
+use actix_web::web;
 
-mod auth;
-    App::new()
-        .wrap(Auth)
-        .configure(configure)
+use crate::handlers::auth;
 
+mod hello;
+mod user;
 
-fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::resource("/").route(web::get().to(hello)));
+pub fn configure(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api")
+            .service(hello::hello),
+    );
 }
 
-async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello world!")
+pub fn configure_protected(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/auth")
+            .wrap(auth::Auth)
+            .service(user::get_user)
+            .service(user::create_user)
+            // .service(auth)
+    );
 }

@@ -1,8 +1,8 @@
-use actix_web::body::{BoxBody, MessageBody};
-use actix_web::dev::{Service, Transform};
 use actix_web::{dev::ServiceRequest, dev::ServiceResponse, Error, HttpResponse};
-use futures_util::future::{ok, LocalBoxFuture, Ready};
-use jsonwebtoken::{decode, DecodingKey, Validation};
+use actix_web::dev::{Transform, Service};
+use actix_web::body::{BoxBody, MessageBody};
+use futures_util::future::{ok, Ready, LocalBoxFuture};
+use jsonwebtoken::{decode, encode, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::rc::Rc;
@@ -62,13 +62,8 @@ where
                 if let Ok(authen_str) = authen_header.to_str() {
                     if authen_str.starts_with("Bearer ") {
                         let token = &authen_str[7..];
-                        let secret =
-                            env::var("SECRET_KEY").unwrap_or_else(|_| "secret".to_string());
-                        let token_data = decode::<Claims>(
-                            &token,
-                            &DecodingKey::from_secret(secret.as_ref()),
-                            &Validation::default(),
-                        );
+                        let secret = env::var("SECRET_KEY").unwrap_or_else(|_| "secret".to_string());
+                        let token_data = decode::<Claims>(&token, &DecodingKey::from_secret(secret.as_ref()), &Validation::default());
 
                         if token_data.is_ok() {
                             let res = service.call(req).await?;
@@ -77,8 +72,8 @@ where
                     }
                 }
             }
-
-            Ok(req.into_response(HttpResponse::Unauthorized().finish().map_into_boxed_body()))
+            let un_auth_body =serde_json::json!({"message": "Unauthorized","code":"10001"});
+            Ok(req.into_response(HttpResponse::Unauthorized().body(un_auth_body.to_string()).map_into_boxed_body()))
         })
     }
 }
