@@ -1,5 +1,5 @@
 use actix_web::web;
-use user::{delete_user, update_user};
+use user::{create_user, delete_user, update_user};
 
 use crate::handlers::auth;
 
