@@ -2,7 +2,7 @@ use actix_web::{dev::ServiceRequest, dev::ServiceResponse, Error, HttpResponse};
 use actix_web::dev::{Transform, Service};
 use actix_web::body::{BoxBody, MessageBody};
 use futures_util::future::{ok, Ready, LocalBoxFuture};
-use jsonwebtoken::{decode, encode, DecodingKey, Validation};
+use jsonwebtoken::{decode, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::rc::Rc;

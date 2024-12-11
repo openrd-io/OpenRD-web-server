@@ -1,4 +1,5 @@
 use actix_web::web;
+use user::{delete_user, update_user};
 
 use crate::handlers::auth;
 
@@ -8,7 +9,10 @@ mod user;
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
-            .service(hello::hello),
+            .service(hello::hello)
+            .service(create_user)
+            .service(update_user)
+            .service(delete_user),
     );
 }
 

@@ -6,15 +6,20 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4.0"
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.42.0", features = ["full"] }
+serde = { version = "1.0.216", features = ["derive"] }
+diesel = { version = "2.2.6", features = ["mysql","r2d2","serde_json"] }
+diesel_migrations = "2.2.0"
 serde_json = "1.0.113"
 r2d2="0.8"
 r2d2-diesel="1.0"
-mysql = "25.0.1"
+# mysql = "25.0.1"
 reqwest = "0.12.9"
-redis = "0.27.5"
+redis = "0.27.6"
 dotenv = "0.15"
 jsonwebtoken = "9.3.0"
 futures-util = "0.3.17"
 uuid = { version = "1", features = ["v4"] }
+deadpool-redis = "0.18.0"
+lazy_static = "1.4.0"
+chrono = { version = "0.4.39", features = ["serde"] }
