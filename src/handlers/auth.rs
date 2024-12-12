@@ -1,79 +1,108 @@
-use actix_web::{dev::ServiceRequest, dev::ServiceResponse, Error, HttpResponse};
-use actix_web::dev::{Transform, Service};
-use actix_web::body::{BoxBody, MessageBody};
-use futures_util::future::{ok, Ready, LocalBoxFuture};
-use jsonwebtoken::{decode, DecodingKey, Validation};
-use serde::{Deserialize, Serialize};
 use std::env;
-use std::rc::Rc;
-use std::task::{Context, Poll};
+
+use actix_web::{dev::ServiceRequest, Error};
+use actix_web_grants::authorities::AuthoritiesExtractor;
+use actix_web_httpauth::extractors::bearer::{self, BearerAuth};
+use actix_web_httpauth::extractors::AuthenticationError;
+use futures_util::future::Ready;
+use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
+use serde::{Deserialize, Serialize};
+
+use crate::app_error;
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    sub: String,
-    user_id: String,
-    exp: usize,
+pub struct Claims {
+    pub sub: String,  // user id
+    pub role: String, // role
+    pub exp: usize,   // expiration time
 }
 
-pub struct Auth;
+struct MyAuthoritiesExtractor;
 
-impl<S, B> Transform<S, ServiceRequest> for Auth
-where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
-    S::Future: 'static,
-    B: MessageBody + 'static,
-{
-    type Response = ServiceResponse<BoxBody>;
-    type Error = Error;
-    type Transform = AuthMiddleware<S>;
-    type InitError = ();
-    type Future = Ready<Result<Self::Transform, Self::InitError>>;
+impl AuthoritiesExtractor<ServiceRequest, Vec<String>> for MyAuthoritiesExtractor {
+    type Future = Ready<Result<Vec<String>, actix_web::Error>>;
 
-    fn new_transform(&self, service: S) -> Self::Future {
-        ok(AuthMiddleware {
-            service: Rc::new(service),
-        })
+    fn extract(&self, req: &ServiceRequest) -> Self::Future {
+        // 在这里实现你的权限提取逻辑
+        extract_permissions_from_token(req)
     }
 }
 
-pub struct AuthMiddleware<S> {
-    service: Rc<S>,
-}
 
-impl<S, B> Service<ServiceRequest> for AuthMiddleware<S>
-where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
-    S::Future: 'static,
-    B: MessageBody + 'static,
-{
-    type Response = ServiceResponse<BoxBody>;
-    type Error = Error;
-    type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
+// 权限提取器
+pub async fn extract_permissions_from_token(req: ServiceRequest) -> Result<Vec<String>, Error> {
+    if let Some(auth_header) = req.headers().get("Authorization") {
+        if let Ok(auth_str) = auth_header.to_str() {
+            if auth_str.starts_with("Bearer ") {
+                let token = auth_str.trim_start_matches("Bearer ");
+                let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+                let key = DecodingKey::from_secret(secret.as_bytes());
 
-    fn poll_ready(&self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.service.poll_ready(cx)
-    }
-
-    fn call(&self, req: ServiceRequest) -> Self::Future {
-        let service = Rc::clone(&self.service);
-
-        Box::pin(async move {
-            if let Some(authen_header) = req.headers().get("Authorization") {
-                if let Ok(authen_str) = authen_header.to_str() {
-                    if authen_str.starts_with("Bearer ") {
-                        let token = &authen_str[7..];
-                        let secret = env::var("SECRET_KEY").unwrap_or_else(|_| "secret".to_string());
-                        let token_data = decode::<Claims>(&token, &DecodingKey::from_secret(secret.as_ref()), &Validation::default());
-
-                        if token_data.is_ok() {
-                            let res = service.call(req).await?;
-                            return Ok(res.map_into_boxed_body());
-                        }
+                match decode::<Claims>(token, &key, &Validation::new(Algorithm::HS256)) {
+                    Ok(token_data) => {
+                        // 从 token 中提取角色，并转换为权限列表
+                        let role = if token_data.claims.role.is_empty() {
+                            "USER".to_string()
+                        } else {
+                            token_data.claims.role
+                        };
+                        return Ok(vec![role]);
+                    }
+                    Err(_) => {
+                        // 如果 token 无效，返回 401 提示无权限
+                        let config = req.app_data::<bearer::Config>().cloned().unwrap_or_default();
+                        return Err(AuthenticationError::from(config).into());
                     }
                 }
             }
-            let un_auth_body =serde_json::json!({"message": "Unauthorized","code":"10001"});
-            Ok(req.into_response(HttpResponse::Unauthorized().body(un_auth_body.to_string()).map_into_boxed_body()))
-        })
+        }
+    }
+    Ok(vec![])  // 如果没有token或token无效，返回空权限列表
+}
+
+// 生成带角色的token
+pub fn generate_token(user_id: &str, role: &str) -> Result<String, jsonwebtoken::errors::Error> {
+    use jsonwebtoken::{encode, EncodingKey, Header};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let expiration = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as usize + 24 * 3600;
+
+    let claims = Claims {
+        sub: user_id.to_string(),
+        role: role.to_owned(),
+        exp: expiration,
+    };
+
+    let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_bytes())
+    )
+}
+
+pub async fn validate_token(req: ServiceRequest, credentials: BearerAuth) -> Result<ServiceRequest, (Error, ServiceRequest)> {
+    let config = req.app_data::<bearer::Config>()
+        .cloned()
+        .unwrap_or_default();
+
+    let token = credentials.token();
+    
+    let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let key = DecodingKey::from_secret(secret.as_bytes());
+
+    match decode::<Claims>(
+        token,
+        &key,
+        &Validation::new(Algorithm::HS256)
+    ) {
+        Ok(_claims) => Ok(req),
+        Err(e) => {
+            app_error!("Token validation failed: {}", e);
+            Err((AuthenticationError::from(config).into(), req))
+        }
     }
 }

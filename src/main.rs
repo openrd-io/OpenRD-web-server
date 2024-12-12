@@ -1,25 +1,49 @@
-use actix_web::{web, App, HttpServer};
-use dotenv::dotenv;
-use std::env;
+use std::sync::Arc;
 
-use openRD_web_server::handlers;
-use openRD_web_server::routes;
+use actix_web::{dev::ServiceRequest, middleware, App, HttpServer};
+use actix_web_grants::GrantsMiddleware;
+use handlers::{auth::extract_permissions_from_token, config::Config, db::DatabaseManager, logger::init_logger};
+mod models;
+mod routes;
+mod schema;
+mod handlers;
+
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    dotenv().ok();
+    // 加载配置
+    let config = Config::from_env()
+        .expect("Failed to load configuration");
 
-    let pool = handlers::db::init_pool();
-    let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
+    // 初始化日志系统
+    init_logger(&config.log.level);
+    
+    // 初始化数据库连接池
+    let db_manager = Arc::new(DatabaseManager::new(
+        &config.database.url,
+        config.database.pool_size
+    ).expect("Failed to initialize database"));
 
-    HttpServer::new(move || {
+    // 健康检查
+    db_manager.check_health()
+        .expect("Database health check failed");
+
+    app_info!("Starting HTTP server at http://{}", config.server_address());
+    // 启动服务器
+    let db_manager = db_manager.clone();
+    HttpServer::new(move|| {
         App::new()
-            .app_data(web::Data::new(pool.clone()))            
-            .configure(routes::configure) // 不需要 auth 校验的路由
-            .configure(routes::configure_protected) // 需要 auth 校验的路由
+            .app_data(actix_web::web::Data::new(db_manager.get_pool()))
+            .wrap(middleware::Logger::default())
+            .wrap(GrantsMiddleware::with_extractor(|req: ServiceRequest| {
+                Box::pin(async move {
+                    extract_permissions_from_token(req).await
+                })
+            }))
+            .wrap(middleware::NormalizePath::trim())
+            .configure(routes::api::configure_routes)
     })
-    .bind(format!("{}:{}", host, port))?
+    .bind(config.server_address())?
     .run()
     .await
 }

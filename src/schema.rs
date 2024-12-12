@@ -1,6 +1,37 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    chat_groups (id) {
+        id -> Integer,
+        #[max_length = 64]
+        biz_id -> Varchar,
+        user_id -> Integer,
+        #[max_length = 255]
+        title -> Varchar,
+        description -> Nullable<Text>,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+        deleted_flag -> Bool,
+    }
+}
+
+diesel::table! {
+    chat_messages (id) {
+        id -> Integer,
+        #[max_length = 64]
+        biz_id -> Varchar,
+        group_id -> Integer,
+        #[max_length = 20]
+        role -> Varchar,
+        content -> Text,
+        tokens -> Integer,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+        deleted_flag -> Bool,
+    }
+}
+
+diesel::table! {
     users (id) {
         id -> Integer,
         #[max_length = 255]
@@ -16,5 +47,16 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         deleted_flag -> Bool,
+        #[max_length = 255]
+        password -> Varchar,
     }
 }
+
+diesel::joinable!(chat_groups -> users (user_id));
+diesel::joinable!(chat_messages -> chat_groups (group_id));
+
+diesel::allow_tables_to_appear_in_same_query!(
+    chat_groups,
+    chat_messages,
+    users,
+);
