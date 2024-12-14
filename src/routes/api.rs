@@ -1,5 +1,4 @@
 use crate::{
-    handlers::error::AppError,
     routes::{auth, chat, user},
     utils::api_response::ApiResponse,
 };

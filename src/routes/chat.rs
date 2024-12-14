@@ -1,7 +1,7 @@
 use crate::handlers::db::DbPool;
 use crate::handlers::error::AppError;
 use crate::models::chat::{ChatGroup, ChatGroupDTO, ChatMessage, ChatMessageDTO};
-use actix_web::{delete, get, post, web, HttpResponse};
+use actix_web::{get, post, web, HttpResponse};
 use actix_web_grants::protect;
 use serde::Deserialize;
 

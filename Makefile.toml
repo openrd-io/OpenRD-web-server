@@ -1,7 +1,7 @@
 [tasks.format_and_fix]
 description = "删除未使用的导入并格式化代码"
 command = "cargo"
-args = ["fix", "--allow-dirty", "--allow-staged"]
+args = ["fix", "--allow-staged"]
 
 [tasks.format]
 description = "格式化所有代码文件"

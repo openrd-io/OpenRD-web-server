@@ -1,7 +1,5 @@
 use serde::Serialize;
 
-use crate::handlers::error::AppError;
-use actix_web::{HttpResponse, Responder, ResponseError};
 
 #[derive(Serialize)]
 pub struct ApiResponse<T> {
