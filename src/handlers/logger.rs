@@ -10,6 +10,8 @@ use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::Error;
 use std::future::{ready, Ready};
 
+use crate::log_info;
+
 pub fn init_logger(log_level: &str) {
     let level = match log_level.to_lowercase().as_str() {
         "trace" => LevelFilter::Trace,
@@ -38,35 +40,6 @@ pub fn init_logger(log_level: &str) {
         .init();
 
     log::info!("Logger initialized with level: {}", log_level);
-}
-
-// 定义一些常用的日志宏
-#[macro_export]
-macro_rules! app_error {
-    ($($arg:tt)+) => ({
-        log::error!("[APP_ERROR] {}", format_args!($($arg)+));
-    })
-}
-
-#[macro_export]
-macro_rules! app_warn {
-    ($($arg:tt)+) => ({
-        log::warn!("[APP_WARN] {}", format_args!($($arg)+));
-    })
-}
-
-#[macro_export]
-macro_rules! app_info {
-    ($($arg:tt)+) => ({
-        log::info!("[APP_INFO] {}", format_args!($($arg)+));
-    })
-}
-
-#[macro_export]
-macro_rules! app_debug {
-    ($($arg:tt)+) => ({
-        log::debug!("[APP_DEBUG] {}", format_args!($($arg)+));
-    })
 }
 
 pub struct RequestLogger;
@@ -120,7 +93,7 @@ where
                 .signed_duration_since(start_time)
                 .num_milliseconds();
 
-            app_info!(
+            log_info!(
                 "Request: {} {} - Status: {} - Duration: {}ms",
                 method,
                 uri,

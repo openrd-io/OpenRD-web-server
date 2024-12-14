@@ -1,7 +1,8 @@
 use crate::handlers::db::DbPool;
 use crate::handlers::error::AppError;
 use crate::models::user::{User, UserDTO};
-use crate::{app_error, app_info}; // 导入日志宏
+use crate::utils::api_response::AppResp;
+use crate::{log_error, log_info}; // 导入日志宏
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 use actix_web_grants::protect;
 
@@ -10,41 +11,41 @@ use actix_web_grants::protect;
 pub async fn get_user(
     pool: web::Data<DbPool>,
     biz_id: web::Path<String>,
-) -> Result<HttpResponse, AppError> {
+) -> Result<impl Responder, AppError> {
     let user_id = biz_id.into_inner();
     let mut conn = pool.get().expect("couldn't get db connection from pool");
 
     let user = web::block(move || User::find_by_id(&mut conn, &user_id))
         .await
         .map_err(|e| {
-            app_error!("failed to get user :{}", e);
+            log_error!("failed to get user :{}", e);
             AppError::InternalServerError
         })?
         .map_err(AppError::from)?;
-
-    Ok(HttpResponse::Ok().json(user))
+    Ok(AppResp(user))    
 }
 
 #[post("/users")]
 pub async fn create_user(
     pool: web::Data<DbPool>,
     user_dto: web::Json<UserDTO>,
-) -> Result<HttpResponse, AppError> {
+) ->  Result<HttpResponse, AppError>  {
     let mut conn = pool.get().map_err(|e| {
-        app_error!("Failed to get DB connection: {}", e);
+        log_error!("Failed to get DB connection: {}", e);
         AppError::InternalServerError
     })?;
 
     let user = web::block(move || User::create(&mut conn, &user_dto))
         .await
         .map_err(|e| {
-            app_error!("Failed to create user: {}", e);
+            log_error!("Failed to create user: {}", e);
             AppError::InternalServerError
         })?
         .map_err(AppError::from)?;
-
-    app_info!("Successfully created user with id: {}", user.id);
-    Ok(HttpResponse::Created().json(user))
+    
+    log_info!("Successfully created user with id: {}", user.id);
+    
+    AppResp(Ok(user))
 }
 
 #[put("/users/{id}")]
@@ -60,7 +61,7 @@ pub async fn update_user(
     let user = web::block(move || User::update(&mut conn, user_id, &user_dto))
         .await
         .map_err(|e| {
-            app_error!("failed to update user,request id={},error={}", user_id, e);
+            log_error!("failed to update user,request id={},error={}", user_id, e);
             AppError::InternalServerError
         })?
         .map_err(AppError::from)?;

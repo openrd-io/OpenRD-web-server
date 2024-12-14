@@ -3,7 +3,7 @@ use derive_more::{Display, From};
 use diesel::result::Error as DieselError;
 use jsonwebtoken::errors::Error as JwtError;
 
-use crate::app_error;
+use crate::{log_error, utils::api_response::ApiResponse};
 
 #[derive(Debug, Display, From)]
 pub enum AppError {
@@ -24,17 +24,19 @@ pub enum AppError {
 }
 
 impl ResponseError for AppError {
+    
     fn error_response(&self) -> HttpResponse {
+        
         match self {
             AppError::InternalServerError => {
-                HttpResponse::InternalServerError().json("Internal Server Error")
+                HttpResponse::InternalServerError().json(ApiResponse::<String>::error("Internal Server Error"))
             }
-            AppError::NotFound(ref message) => HttpResponse::NotFound().json(message),
-            AppError::BadRequest(ref message) => HttpResponse::BadRequest().json(message),
+            AppError::NotFound(ref message) => HttpResponse::NotFound().json(ApiResponse::<String>::error(message)),
+            AppError::BadRequest(ref message) => HttpResponse::BadRequest().json(ApiResponse::<String>::error(message)),
             AppError::Unauthorized => HttpResponse::Unauthorized().json("Unauthorized"),
             AppError::JwtError(ref e) => {
-                app_error!("JWT error: {}", e);
-                HttpResponse::Unauthorized().json("Unauthorized")
+                log_error!("JWT error: {}", e);
+                HttpResponse::Unauthorized().json(ApiResponse::<String>::error("Unauthorized"))
             }
         }
     }

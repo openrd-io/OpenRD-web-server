@@ -7,7 +7,7 @@ use actix_web_httpauth::extractors::AuthenticationError;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 
-use crate::app_error;
+use crate::log_error;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -94,7 +94,7 @@ pub async fn validate_token(
     match decode::<Claims>(token, &key, &Validation::new(Algorithm::HS256)) {
         Ok(_claims) => Ok(req),
         Err(e) => {
-            app_error!("Token validation failed: {}", e);
+            log_error!("Token validation failed: {}", e);
             Err((AuthenticationError::from(config).into(), req))
         }
     }

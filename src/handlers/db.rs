@@ -3,7 +3,7 @@ use diesel::r2d2::{self, ConnectionManager};
 use std::time::Duration;
 
 use crate::handlers::error::AppError;
-use crate::{app_error, app_info, app_warn};
+use crate::{log_error, log_info, log_warn};
 use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
@@ -18,7 +18,7 @@ pub struct DatabaseManager {
 
 impl DatabaseManager {
     pub fn new(database_url: &str, max_size: u32) -> Result<Self, AppError> {
-        app_info!("Initializing database connection pool...");
+        log_info!("Initializing database connection pool...");
 
         let manager = ConnectionManager::<MysqlConnection>::new(database_url);
         let pool = r2d2::Pool::builder()
@@ -28,19 +28,19 @@ impl DatabaseManager {
             .test_on_check_out(true)
             .build(manager)
             .map_err(|e| {
-                app_error!("Failed to create connection pool: {}", e);
+                log_error!("Failed to create connection pool: {}", e);
                 AppError::InternalServerError
             })?;
 
         // 运行数据库迁移
         let mut conn = pool.get().map_err(|e| {
-            app_error!("Failed to get database connection: {}", e);
+            log_error!("Failed to get database connection: {}", e);
             AppError::InternalServerError
         })?;
 
         Self::run_migrations(&mut conn)?;
 
-        app_info!("Database pool initialized with size: {}", max_size);
+        log_info!("Database pool initialized with size: {}", max_size);
         Ok(Self { pool })
     }
 
@@ -49,27 +49,27 @@ impl DatabaseManager {
     }
 
     pub fn run_migrations(conn: &mut MysqlConnection) -> Result<(), AppError> {
-        app_info!("Running database migrations...");
+        log_info!("Running database migrations...");
 
         conn.run_pending_migrations(MIGRATIONS).map_err(|e| {
-            app_error!("Failed to run migrations: {}", e);
+            log_error!("Failed to run migrations: {}", e);
             AppError::InternalServerError
         })?;
 
-        app_info!("Database migrations completed successfully");
+        log_info!("Database migrations completed successfully");
         Ok(())
     }
 
     pub fn check_health(&self) -> Result<(), AppError> {
         let mut conn = self.pool.get().map_err(|e| {
-            app_warn!("Health check failed - could not get connection: {}", e);
+            log_warn!("Health check failed - could not get connection: {}", e);
             AppError::InternalServerError
         })?;
 
         diesel::sql_query("SELECT 1")
             .execute(&mut *conn)
             .map_err(|e| {
-                app_warn!("Health check failed - query failed: {}", e);
+                log_warn!("Health check failed - query failed: {}", e);
                 AppError::InternalServerError
             })?;
 
@@ -119,7 +119,7 @@ pub fn initialize_test_database() -> Result<MysqlConnection, AppError> {
         env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set for tests");
 
     let mut conn = MysqlConnection::establish(&database_url).map_err(|e| {
-        app_error!("Failed to establish test database connection: {}", e);
+        log_error!("Failed to establish test database connection: {}", e);
         AppError::InternalServerError
     })?;
 

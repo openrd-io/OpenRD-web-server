@@ -1,14 +1,18 @@
+#[macro_use]
+extern crate openRD_web_server;
+#[macro_use]
+extern crate diesel;
+
 use std::sync::Arc;
 
 use actix_web::{middleware, App, HttpServer};
 use actix_web_grants::GrantsMiddleware;
-use handlers::{
+use openRD_web_server::handlers::{
     auth::extract_permissions_from_token, config::Config, db::DatabaseManager, logger::init_logger,
 };
-mod handlers;
-mod models;
-mod routes;
-mod schema;
+
+use openRD_web_server::log_info;
+use openRD_web_server::routes;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -29,7 +33,7 @@ async fn main() -> std::io::Result<()> {
         .check_health()
         .expect("Database health check failed");
 
-    app_info!("Starting HTTP server at http://{}", config.server_address());
+    log_info!("Starting HTTP server at http://{}", config.server_address());
     // 启动服务器
     let db_manager = db_manager.clone();
     HttpServer::new(move || {
