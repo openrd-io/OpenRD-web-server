@@ -1,11 +1,10 @@
+use std::collections::HashSet;
 use std::env;
 
 use actix_web::{dev::ServiceRequest, Error};
-use actix_web_grants::authorities::AuthoritiesExtractor;
 use actix_web_httpauth::extractors::bearer::{self, BearerAuth};
 use actix_web_httpauth::extractors::AuthenticationError;
-use futures_util::future::Ready;
-use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
+use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 
 use crate::app_error;
@@ -17,20 +16,10 @@ pub struct Claims {
     pub exp: usize,   // expiration time
 }
 
-struct MyAuthoritiesExtractor;
-
-impl AuthoritiesExtractor<ServiceRequest, Vec<String>> for MyAuthoritiesExtractor {
-    type Future = Ready<Result<Vec<String>, actix_web::Error>>;
-
-    fn extract(&self, req: &ServiceRequest) -> Self::Future {
-        // 在这里实现你的权限提取逻辑
-        extract_permissions_from_token(req)
-    }
-}
-
-
 // 权限提取器
-pub async fn extract_permissions_from_token(req: ServiceRequest) -> Result<Vec<String>, Error> {
+pub async fn extract_permissions_from_token(
+    req: &ServiceRequest,
+) -> Result<HashSet<String>, Error> {
     if let Some(auth_header) = req.headers().get("Authorization") {
         if let Ok(auth_str) = auth_header.to_str() {
             if auth_str.starts_with("Bearer ") {
@@ -46,18 +35,21 @@ pub async fn extract_permissions_from_token(req: ServiceRequest) -> Result<Vec<S
                         } else {
                             token_data.claims.role
                         };
-                        return Ok(vec![role]);
+                        return Ok(HashSet::from([role]));
                     }
                     Err(_) => {
                         // 如果 token 无效，返回 401 提示无权限
-                        let config = req.app_data::<bearer::Config>().cloned().unwrap_or_default();
+                        let config = req
+                            .app_data::<bearer::Config>()
+                            .cloned()
+                            .unwrap_or_default();
                         return Err(AuthenticationError::from(config).into());
                     }
                 }
             }
         }
     }
-    Ok(vec![])  // 如果没有token或token无效，返回空权限列表
+    Ok(HashSet::from([])) // 如果没有token或token无效，返回空权限列表
 }
 
 // 生成带角色的token
@@ -68,7 +60,8 @@ pub fn generate_token(user_id: &str, role: &str) -> Result<String, jsonwebtoken:
     let expiration = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
-        .as_secs() as usize + 24 * 3600;
+        .as_secs() as usize
+        + 24 * 3600;
 
     let claims = Claims {
         sub: user_id.to_string(),
@@ -80,25 +73,25 @@ pub fn generate_token(user_id: &str, role: &str) -> Result<String, jsonwebtoken:
     encode(
         &Header::default(),
         &claims,
-        &EncodingKey::from_secret(secret.as_bytes())
+        &EncodingKey::from_secret(secret.as_bytes()),
     )
 }
 
-pub async fn validate_token(req: ServiceRequest, credentials: BearerAuth) -> Result<ServiceRequest, (Error, ServiceRequest)> {
-    let config = req.app_data::<bearer::Config>()
+pub async fn validate_token(
+    req: ServiceRequest,
+    credentials: BearerAuth,
+) -> Result<ServiceRequest, (Error, ServiceRequest)> {
+    let config = req
+        .app_data::<bearer::Config>()
         .cloned()
         .unwrap_or_default();
 
     let token = credentials.token();
-    
+
     let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
     let key = DecodingKey::from_secret(secret.as_bytes());
 
-    match decode::<Claims>(
-        token,
-        &key,
-        &Validation::new(Algorithm::HS256)
-    ) {
+    match decode::<Claims>(token, &key, &Validation::new(Algorithm::HS256)) {
         Ok(_claims) => Ok(req),
         Err(e) => {
             app_error!("Token validation failed: {}", e);

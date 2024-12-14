@@ -1,8 +1,8 @@
-use actix_web::{get, post, put, delete, web, HttpResponse, Responder};
-use crate::models::user::{User, UserDTO};
 use crate::handlers::db::DbPool;
 use crate::handlers::error::AppError;
-use crate::{app_info, app_error};  // 导入日志宏
+use crate::models::user::{User, UserDTO};
+use crate::{app_error, app_info}; // 导入日志宏
+use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 use actix_web_grants::protect;
 
 #[get("/users/{id}")]
@@ -13,13 +13,13 @@ pub async fn get_user(
 ) -> Result<HttpResponse, AppError> {
     let user_id = biz_id.into_inner();
     let mut conn = pool.get().expect("couldn't get db connection from pool");
-    
+
     let user = web::block(move || User::find_by_id(&mut conn, &user_id))
         .await
-        .map_err(|e|{
+        .map_err(|e| {
             app_error!("failed to get user :{}", e);
             AppError::InternalServerError
-         })?
+        })?
         .map_err(AppError::from)?;
 
     Ok(HttpResponse::Ok().json(user))
@@ -34,7 +34,7 @@ pub async fn create_user(
         app_error!("Failed to get DB connection: {}", e);
         AppError::InternalServerError
     })?;
-    
+
     let user = web::block(move || User::create(&mut conn, &user_dto))
         .await
         .map_err(|e| {
@@ -56,11 +56,11 @@ pub async fn update_user(
 ) -> Result<HttpResponse, AppError> {
     let user_id = user_id.into_inner();
     let mut conn = pool.get().expect("couldn't get db connection from pool");
-    
+
     let user = web::block(move || User::update(&mut conn, user_id, &user_dto))
         .await
         .map_err(|e| {
-            app_error!("failed to update user,request id={},error={}",user_id,e);
+            app_error!("failed to update user,request id={},error={}", user_id, e);
             AppError::InternalServerError
         })?
         .map_err(AppError::from)?;
@@ -76,7 +76,7 @@ pub async fn delete_user(
 ) -> Result<HttpResponse, AppError> {
     let user_id = user_id.into_inner();
     let mut conn = pool.get().expect("couldn't get db connection from pool");
-    
+
     web::block(move || User::delete(&mut conn, user_id))
         .await
         .map_err(|_| AppError::InternalServerError)?
@@ -92,9 +92,13 @@ pub async fn list_users(
     query: web::Query<ListUsersQuery>,
 ) -> Result<HttpResponse, AppError> {
     let mut conn = pool.get().expect("couldn't get db connection from pool");
-    
+
     let users = web::block(move || {
-        User::list(&mut conn, query.page.unwrap_or(1), query.per_page.unwrap_or(10))
+        User::list(
+            &mut conn,
+            query.page.unwrap_or(1),
+            query.per_page.unwrap_or(10),
+        )
     })
     .await
     .map_err(|_| AppError::InternalServerError)?
@@ -111,8 +115,8 @@ pub struct ListUsersQuery {
 
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(create_user)
-       .service(get_user)
-       .service(update_user)
-       .service(delete_user)
-       .service(list_users);
+        .service(get_user)
+        .service(update_user)
+        .service(delete_user)
+        .service(list_users);
 }

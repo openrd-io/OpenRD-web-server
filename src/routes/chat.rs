@@ -1,8 +1,8 @@
-use actix_web::{get, post, delete, web, HttpResponse};
-use actix_web_grants::protect;
+use crate::handlers::db::DbPool;
 use crate::handlers::error::AppError;
 use crate::models::chat::{ChatGroup, ChatGroupDTO, ChatMessage, ChatMessageDTO};
-use crate::handlers::db::DbPool;
+use actix_web::{delete, get, post, web, HttpResponse};
+use actix_web_grants::protect;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -18,7 +18,7 @@ async fn create_chat_group(
     group_dto: web::Json<ChatGroupDTO>,
 ) -> Result<HttpResponse, AppError> {
     let mut conn = pool.get().expect("couldn't get db connection from pool");
-    
+
     let group = web::block(move || ChatGroup::create(&mut conn, &group_dto))
         .await
         .map_err(|_| AppError::InternalServerError)?
@@ -48,7 +48,6 @@ async fn create_message(
     Ok(HttpResponse::Created().json(message))
 }
 
-
 #[get("/chat/groups/{id}/messages")]
 #[protect("USER")]
 async fn list_messages(
@@ -60,16 +59,18 @@ async fn list_messages(
     let group_id = group_id.into_inner();
     let mut conn = pool.get().map_err(|_| AppError::InternalServerError)?;
 
-    let messages = web::block(move || ChatMessage::find_by_group_id(&mut conn, group_id, query.page, query.per_page))
-        .await
-        .map_err(|_| AppError::InternalServerError)?
-        .map_err(AppError::from)?;
+    let messages = web::block(move || {
+        ChatMessage::find_by_group_id(&mut conn, group_id, query.page, query.per_page)
+    })
+    .await
+    .map_err(|_| AppError::InternalServerError)?
+    .map_err(AppError::from)?;
 
     Ok(HttpResponse::Ok().json(messages))
 }
 
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(create_chat_group)
-       .service(create_message)
-       .service(list_messages);
-} 
+        .service(create_message)
+        .service(list_messages);
+}

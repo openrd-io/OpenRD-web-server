@@ -5,9 +5,9 @@ use log::LevelFilter;
 use std::io::Write;
 
 // 用于记录请求和响应的中间件
+use actix_web::dev::Service;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::Error;
-use actix_web::dev::Service;
 use std::future::{ready, Ready};
 
 pub fn init_logger(log_level: &str) {
@@ -69,7 +69,6 @@ macro_rules! app_debug {
     })
 }
 
-
 pub struct RequestLogger;
 
 impl<S> actix_web::dev::Transform<S, ServiceRequest> for RequestLogger
@@ -101,7 +100,10 @@ where
     type Error = Error;
     type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
-    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(
+        &self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
@@ -114,8 +116,10 @@ where
 
         Box::pin(async move {
             let res = fut.await?;
-            let duration = Local::now().signed_duration_since(start_time).num_milliseconds();
-            
+            let duration = Local::now()
+                .signed_duration_since(start_time)
+                .num_milliseconds();
+
             app_info!(
                 "Request: {} {} - Status: {} - Duration: {}ms",
                 method,
@@ -127,4 +131,4 @@ where
             Ok(res)
         })
     }
-} 
+}

@@ -1,7 +1,7 @@
+use crate::schema::users;
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use chrono::NaiveDateTime;
-use crate::schema::users;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Selectable)]
@@ -33,7 +33,6 @@ pub struct UserDTO {
     pub password: String, // 新增的字段
 }
 
-
 impl User {
     pub fn find_by_id(conn: &mut MysqlConnection, user_id: &str) -> QueryResult<User> {
         use crate::schema::users::dsl::*;
@@ -45,7 +44,7 @@ impl User {
 
     pub fn create(conn: &mut MysqlConnection, user_dto: &UserDTO) -> QueryResult<User> {
         use crate::schema::users::dsl::*;
-        
+
         let new_user = (
             biz_id.eq(Uuid::new_v4().to_string()),
             name.eq(&user_dto.name),
@@ -56,16 +55,18 @@ impl User {
             deleted_flag.eq(false),
         );
 
-        diesel::insert_into(users)
-            .values(new_user)
-            .execute(conn)?;
-        
+        diesel::insert_into(users).values(new_user).execute(conn)?;
+
         users.order(id.desc()).first(conn)
     }
 
-    pub fn update(conn: &mut MysqlConnection, user_id: i32, user_dto: &UserDTO) -> QueryResult<User> {
+    pub fn update(
+        conn: &mut MysqlConnection,
+        user_id: i32,
+        user_dto: &UserDTO,
+    ) -> QueryResult<User> {
         use crate::schema::users::dsl::*;
-        
+
         diesel::update(users.find(user_id))
             .set((
                 name.eq(&user_dto.name),
@@ -76,13 +77,13 @@ impl User {
                 updated_at.eq(diesel::dsl::now),
             ))
             .execute(conn)?;
-        
+
         users.find(user_id).first(conn)
     }
 
     pub fn delete(conn: &mut MysqlConnection, user_id: i32) -> QueryResult<usize> {
         use crate::schema::users::dsl::*;
-        
+
         diesel::update(users.find(user_id))
             .set(deleted_flag.eq(true))
             .execute(conn)
@@ -90,7 +91,7 @@ impl User {
 
     pub fn list(conn: &mut MysqlConnection, page: i64, per_page: i64) -> QueryResult<Vec<User>> {
         use crate::schema::users::dsl::*;
-        
+
         users
             .filter(deleted_flag.eq(false))
             .order(id.desc())

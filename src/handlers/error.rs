@@ -5,8 +5,7 @@ use jsonwebtoken::errors::Error as JwtError;
 
 use crate::app_error;
 
-
-#[derive(Debug, Display,From)]
+#[derive(Debug, Display, From)]
 pub enum AppError {
     #[display("Internal Server Error")]
     InternalServerError,
@@ -27,7 +26,9 @@ pub enum AppError {
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
         match self {
-            AppError::InternalServerError => HttpResponse::InternalServerError().json("Internal Server Error"),
+            AppError::InternalServerError => {
+                HttpResponse::InternalServerError().json("Internal Server Error")
+            }
             AppError::NotFound(ref message) => HttpResponse::NotFound().json(message),
             AppError::BadRequest(ref message) => HttpResponse::BadRequest().json(message),
             AppError::Unauthorized => HttpResponse::Unauthorized().json("Unauthorized"),
@@ -46,4 +47,4 @@ impl From<DieselError> for AppError {
             _ => AppError::InternalServerError,
         }
     }
-} 
+}

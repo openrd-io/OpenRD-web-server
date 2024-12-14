@@ -1,12 +1,12 @@
-use actix_web::{post, web, HttpResponse};
-use serde::{Deserialize, Serialize};
-use crate::handlers::error::AppError;
 use crate::handlers::auth::generate_token;
 use crate::handlers::db::DbPool;
+use crate::handlers::error::AppError;
 use crate::models::user::User;
 use crate::schema::users::dsl::*;
-use diesel::prelude::*;
+use actix_web::{post, web, HttpResponse};
 use bcrypt::verify;
+use diesel::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
@@ -23,11 +23,12 @@ pub struct LoginResponse {
 #[post("/auth/login")]
 async fn login(
     pool: web::Data<DbPool>,
-    login_req: web::Json<LoginRequest>
+    login_req: web::Json<LoginRequest>,
 ) -> Result<HttpResponse, AppError> {
-    let mut conn =pool.get().map_err(|_| AppError::InternalServerError)?;
+    let mut conn = pool.get().map_err(|_| AppError::InternalServerError)?;
     // 查找用户
-    let user = users.filter(name.eq(&login_req.username))
+    let user = users
+        .filter(name.eq(&login_req.username))
         .first::<User>(&mut conn)
         .map_err(|_| AppError::Unauthorized)?;
 
@@ -36,9 +37,12 @@ async fn login(
         return Err(AppError::Unauthorized);
     }
 
-
     // 根据用户类型分配角色
-    let role = if user.email == "a11mypr1nt@gmail.com" { "ADMIN" } else { "USER" };
+    let role = if user.email == "a11mypr1nt@gmail.com" {
+        "ADMIN"
+    } else {
+        "USER"
+    };
 
     // 生成带角色的 token
     let token = generate_token(&user.id.to_string(), &role)?;
@@ -52,4 +56,4 @@ async fn login(
 
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(login);
-} 
+}

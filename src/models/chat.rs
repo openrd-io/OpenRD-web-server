@@ -1,8 +1,8 @@
+use crate::schema::{chat_groups, chat_messages};
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use chrono::NaiveDateTime;
 use uuid::Uuid;
-use crate::schema::{chat_groups, chat_messages};
 
 // 聊天组模型
 #[derive(Debug, Serialize, Deserialize, Queryable, Identifiable)]
@@ -60,7 +60,7 @@ pub struct ChatMessageDTO {
 impl ChatGroup {
     pub fn create(conn: &mut MysqlConnection, group_dto: &ChatGroupDTO) -> QueryResult<ChatGroup> {
         use crate::schema::chat_groups::dsl::*;
-        
+
         let new_group = (
             biz_id.eq(Uuid::new_v4().to_string()),
             user_id.eq(group_dto.user_id),
@@ -72,7 +72,7 @@ impl ChatGroup {
         diesel::insert_into(chat_groups)
             .values(new_group)
             .execute(conn)?;
-        
+
         chat_groups.order(id.desc()).first(conn)
     }
 
@@ -88,7 +88,7 @@ impl ChatGroup {
         conn: &mut MysqlConnection,
         user_id_val: i32,
         page: i64,
-        per_page: i64
+        per_page: i64,
     ) -> QueryResult<Vec<ChatGroup>> {
         use crate::schema::chat_groups::dsl::*;
         chat_groups
@@ -103,10 +103,10 @@ impl ChatGroup {
     pub fn update(
         conn: &mut MysqlConnection,
         group_id: i32,
-        group_dto: &ChatGroupDTO
+        group_dto: &ChatGroupDTO,
     ) -> QueryResult<ChatGroup> {
         use crate::schema::chat_groups::dsl::*;
-        
+
         diesel::update(chat_groups.find(group_id))
             .set((
                 title.eq(&group_dto.title),
@@ -114,7 +114,7 @@ impl ChatGroup {
                 deleted_flag.eq(group_dto.deleted_flag),
             ))
             .execute(conn)?;
-        
+
         chat_groups.find(group_id).first(conn)
     }
 
@@ -128,7 +128,7 @@ impl ChatGroup {
     pub fn count_by_user(conn: &mut MysqlConnection, user_id_val: i32) -> QueryResult<i64> {
         use crate::schema::chat_groups::dsl::*;
         use diesel::dsl::count;
-        
+
         chat_groups
             .filter(user_id.eq(user_id_val))
             .filter(deleted_flag.eq(false))
@@ -139,9 +139,12 @@ impl ChatGroup {
 
 // ChatMessage 实现
 impl ChatMessage {
-    pub fn create(conn: &mut MysqlConnection, message_dto: &ChatMessageDTO) -> QueryResult<ChatMessage> {
+    pub fn create(
+        conn: &mut MysqlConnection,
+        message_dto: &ChatMessageDTO,
+    ) -> QueryResult<ChatMessage> {
         use crate::schema::chat_messages::dsl::*;
-        
+
         let new_message = (
             biz_id.eq(Uuid::new_v4().to_string()),
             group_id.eq(message_dto.group_id),
@@ -154,7 +157,7 @@ impl ChatMessage {
         diesel::insert_into(chat_messages)
             .values(new_message)
             .execute(conn)?;
-        
+
         chat_messages.order(id.desc()).first(conn)
     }
 
@@ -162,7 +165,7 @@ impl ChatMessage {
         conn: &mut MysqlConnection,
         group_id_val: i32,
         page: i64,
-        per_page: i64
+        per_page: i64,
     ) -> QueryResult<Vec<ChatMessage>> {
         use crate::schema::chat_messages::dsl::*;
         chat_messages
@@ -177,10 +180,10 @@ impl ChatMessage {
     pub fn update(
         conn: &mut MysqlConnection,
         message_id: i32,
-        message_dto: &ChatMessageDTO
+        message_dto: &ChatMessageDTO,
     ) -> QueryResult<ChatMessage> {
         use crate::schema::chat_messages::dsl::*;
-        
+
         diesel::update(chat_messages.find(message_id))
             .set((
                 content.eq(&message_dto.content),
@@ -188,7 +191,7 @@ impl ChatMessage {
                 deleted_flag.eq(message_dto.deleted_flag),
             ))
             .execute(conn)?;
-        
+
         chat_messages.find(message_id).first(conn)
     }
 
@@ -202,7 +205,7 @@ impl ChatMessage {
     pub fn count_by_group(conn: &mut MysqlConnection, group_id_val: i32) -> QueryResult<i64> {
         use crate::schema::chat_messages::dsl::*;
         use diesel::dsl::count;
-        
+
         chat_messages
             .filter(group_id.eq(group_id_val))
             .filter(deleted_flag.eq(false))
@@ -213,7 +216,7 @@ impl ChatMessage {
     pub fn find_latest_by_group(
         conn: &mut MysqlConnection,
         group_id_val: i32,
-        limit: i64
+        limit: i64,
     ) -> QueryResult<Vec<ChatMessage>> {
         use crate::schema::chat_messages::dsl::*;
         chat_messages
@@ -230,4 +233,4 @@ impl ChatMessage {
 pub struct ChatQuery {
     pub page: Option<i64>,
     pub per_page: Option<i64>,
-} 
+}

@@ -1,11 +1,11 @@
-use diesel::r2d2::{self, ConnectionManager};
 use diesel::mysql::MysqlConnection;
+use diesel::r2d2::{self, ConnectionManager};
 use std::time::Duration;
 
+use crate::handlers::error::AppError;
+use crate::{app_error, app_info, app_warn};
 use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use crate::handlers::error::AppError;
-use crate::{app_info, app_error, app_warn};
 
 pub type DbPool = r2d2::Pool<ConnectionManager<MysqlConnection>>;
 pub type DbConnection = r2d2::PooledConnection<ConnectionManager<MysqlConnection>>;
@@ -19,7 +19,7 @@ pub struct DatabaseManager {
 impl DatabaseManager {
     pub fn new(database_url: &str, max_size: u32) -> Result<Self, AppError> {
         app_info!("Initializing database connection pool...");
-        
+
         let manager = ConnectionManager::<MysqlConnection>::new(database_url);
         let pool = r2d2::Pool::builder()
             .max_size(max_size)
@@ -39,7 +39,7 @@ impl DatabaseManager {
         })?;
 
         Self::run_migrations(&mut conn)?;
-        
+
         app_info!("Database pool initialized with size: {}", max_size);
         Ok(Self { pool })
     }
@@ -50,13 +50,12 @@ impl DatabaseManager {
 
     pub fn run_migrations(conn: &mut MysqlConnection) -> Result<(), AppError> {
         app_info!("Running database migrations...");
-        
-        conn.run_pending_migrations(MIGRATIONS)
-            .map_err(|e| {
-                app_error!("Failed to run migrations: {}", e);
-                AppError::InternalServerError
-            })?;
-        
+
+        conn.run_pending_migrations(MIGRATIONS).map_err(|e| {
+            app_error!("Failed to run migrations: {}", e);
+            AppError::InternalServerError
+        })?;
+
         app_info!("Database migrations completed successfully");
         Ok(())
     }
@@ -97,15 +96,15 @@ impl Default for ConnectionOptions {
 impl r2d2::CustomizeConnection<MysqlConnection, diesel::r2d2::Error> for ConnectionOptions {
     fn on_acquire(&self, conn: &mut MysqlConnection) -> Result<(), diesel::r2d2::Error> {
         use diesel::sql_query;
-        
+
         sql_query(&format!("SET time_zone = '{}'", self.timezone))
             .execute(conn)
             .map_err(diesel::r2d2::Error::QueryError)?;
-            
+
         sql_query(&format!("SET NAMES {}", self.charset))
             .execute(conn)
             .map_err(diesel::r2d2::Error::QueryError)?;
-            
+
         Ok(())
     }
 }
@@ -114,17 +113,16 @@ impl r2d2::CustomizeConnection<MysqlConnection, diesel::r2d2::Error> for Connect
 pub fn initialize_test_database() -> Result<MysqlConnection, AppError> {
     use dotenv::dotenv;
     use std::env;
-    
+
     dotenv().ok();
-    let database_url = env::var("TEST_DATABASE_URL")
-        .expect("TEST_DATABASE_URL must be set for tests");
-        
-    let mut conn = MysqlConnection::establish(&database_url)
-        .map_err(|e| {
-            app_error!("Failed to establish test database connection: {}", e);
-            AppError::InternalServerError
-        })?;
-        
+    let database_url =
+        env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set for tests");
+
+    let mut conn = MysqlConnection::establish(&database_url).map_err(|e| {
+        app_error!("Failed to establish test database connection: {}", e);
+        AppError::InternalServerError
+    })?;
+
     DatabaseManager::run_migrations(&mut conn)?;
     Ok(conn)
 }
