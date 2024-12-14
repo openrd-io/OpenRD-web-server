@@ -1,7 +1,6 @@
 use crate::handlers::db::DbPool;
 use crate::handlers::error::AppError;
 use crate::models::user::{User, UserDTO};
-use crate::utils::api_response::AppResp;
 use crate::{log_error, log_info}; // 导入日志宏
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 use actix_web_grants::protect;
@@ -22,14 +21,14 @@ pub async fn get_user(
             AppError::InternalServerError
         })?
         .map_err(AppError::from)?;
-    Ok(AppResp(user))    
+    Ok(HttpResponse::Ok().json(user))
 }
 
 #[post("/users")]
 pub async fn create_user(
     pool: web::Data<DbPool>,
     user_dto: web::Json<UserDTO>,
-) ->  Result<HttpResponse, AppError>  {
+) -> Result<HttpResponse, AppError> {
     let mut conn = pool.get().map_err(|e| {
         log_error!("Failed to get DB connection: {}", e);
         AppError::InternalServerError
@@ -42,10 +41,10 @@ pub async fn create_user(
             AppError::InternalServerError
         })?
         .map_err(AppError::from)?;
-    
+
     log_info!("Successfully created user with id: {}", user.id);
-    
-    AppResp(Ok(user))
+
+    Ok(HttpResponse::Ok().json(user))
 }
 
 #[put("/users/{id}")]

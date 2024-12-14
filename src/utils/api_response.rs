@@ -27,13 +27,3 @@ impl<T> ApiResponse<T> {
         }
     }
 }
-
-pub struct AppResp<T>(pub T);
-
-impl<T: Serialize> Responder for AppResp<T> {
-    type Body = actix_web::body::BoxBody;
-
-    fn respond_to(self, _req: &actix_web::HttpRequest) -> HttpResponse<Self::Body> {
-        HttpResponse::Ok().json(ApiResponse::success(self.0))
-    }
-}

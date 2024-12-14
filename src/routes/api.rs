@@ -1,7 +1,9 @@
 use crate::{
-    routes::{auth, chat, user}, utils::api_response::AppResp,
+    handlers::error::AppError,
+    routes::{auth, chat, user},
+    utils::api_response::ApiResponse,
 };
-use actix_web::{get, web, HttpResponse, Responder, Scope};
+use actix_web::{get, web, HttpResponse, Responder};
 
 // API 版本前缀常量
 pub const API_VERSION: &str = "/api/v1";
@@ -9,7 +11,7 @@ pub const API_VERSION: &str = "/api/v1";
 // 定义处理函数
 #[get("/hello")]
 async fn hello_world() -> impl Responder {
-    AppResp(Ok("Hello, World!"))
+    HttpResponse::Ok().json(ApiResponse::success("Hello, world!"))
 }
 
 // 配置所有 API 路由

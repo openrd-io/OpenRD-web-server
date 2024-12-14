@@ -24,15 +24,16 @@ pub enum AppError {
 }
 
 impl ResponseError for AppError {
-    
     fn error_response(&self) -> HttpResponse {
-        
         match self {
-            AppError::InternalServerError => {
-                HttpResponse::InternalServerError().json(ApiResponse::<String>::error("Internal Server Error"))
+            AppError::InternalServerError => HttpResponse::InternalServerError()
+                .json(ApiResponse::<String>::error("Internal Server Error")),
+            AppError::NotFound(ref message) => {
+                HttpResponse::NotFound().json(ApiResponse::<String>::error(message))
             }
-            AppError::NotFound(ref message) => HttpResponse::NotFound().json(ApiResponse::<String>::error(message)),
-            AppError::BadRequest(ref message) => HttpResponse::BadRequest().json(ApiResponse::<String>::error(message)),
+            AppError::BadRequest(ref message) => {
+                HttpResponse::BadRequest().json(ApiResponse::<String>::error(message))
+            }
             AppError::Unauthorized => HttpResponse::Unauthorized().json("Unauthorized"),
             AppError::JwtError(ref e) => {
                 log_error!("JWT error: {}", e);
