@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use actix_web::{middleware, App, HttpServer};
 use actix_web_grants::GrantsMiddleware;
+use openRD_web_server::handlers::logger::{RequestLoggerMiddleware};
 use openRD_web_server::handlers::{
     auth::extract_permissions_from_token, config::Config, db::DatabaseManager, logger::init_logger,
 };
@@ -20,7 +21,7 @@ async fn main() -> std::io::Result<()> {
     let config = Config::from_env().expect("Failed to load configuration");
 
     // 初始化日志系统
-    init_logger(&config.log.level);
+    init_logger(&config.log.level, &config.log.path);
 
     // 初始化数据库连接池
     let db_manager = Arc::new(
@@ -39,11 +40,11 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(actix_web::web::Data::new(db_manager.get_pool()))
-            .wrap(middleware::Logger::default())
+            .wrap(RequestLoggerMiddleware)
             .wrap(GrantsMiddleware::with_extractor(
                 extract_permissions_from_token,
-            ))
-            .wrap(middleware::NormalizePath::trim())
+            ))            
+            .wrap(middleware::NormalizePath::trim())                        
             .configure(routes::api::configure_routes)
     })
     .bind(config.server_address())?

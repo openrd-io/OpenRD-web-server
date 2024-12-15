@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["configure_routes"],"struct":["LoginRequest","LoginResponse","login"]};

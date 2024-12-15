@@ -1,0 +1,41 @@
+2024-12-15 15:15:05 [INFO] - openRD_web_server::handlers::db - src/handlers/db.rs:21 - [APP_INFO] Initializing database connection pool...
+2024-12-15 15:15:05 [INFO] - openRD_web_server::handlers::db - src/handlers/db.rs:52 - [APP_INFO] Running database migrations...
+2024-12-15 15:15:06 [INFO] - openRD_web_server::handlers::db - src/handlers/db.rs:59 - [APP_INFO] Database migrations completed successfully
+2024-12-15 15:15:06 [INFO] - openRD_web_server::handlers::db - src/handlers/db.rs:43 - [APP_INFO] Database pool initialized with size: 10
+2024-12-15 15:15:06 [INFO] - openRD_web_server - src/main.rs:37 - [APP_INFO] Starting HTTP server at http://127.0.0.1:8080
+2024-12-15 15:15:06 [INFO] - actix_server::builder - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/builder.rs:272 - starting 2 workers
+2024-12-15 15:15:06 [INFO] - actix_server::server - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/server.rs:191 - Actix runtime found; starting in Actix runtime
+2024-12-15 15:15:06 [INFO] - actix_server::server - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/server.rs:197 - starting service: "actix-web-service-127.0.0.1:8080", workers: 2, listening on: 127.0.0.1:8080
+2024-12-15 15:15:18 [INFO] - openRD_web_server::handlers::logger - /workspaces/OpenRD-web-server/src/handlers/logger.rs:87 - 处理请求: POST /api/v1/users
+2024-12-15 15:15:18 [INFO] - openRD_web_server::handlers::logger - /workspaces/OpenRD-web-server/src/handlers/logger.rs:102 - [APP_INFO] Request: POST /api/v1/users - Status: 500 - Duration: 8ms
+2024-12-15 15:19:23 [INFO] - actix_server::server - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/server.rs:319 - SIGINT received; starting forced shutdown
+2024-12-15 15:19:23 [INFO] - actix_server::accept - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/accept.rs:143 - accept thread stopped
+2024-12-15 15:19:23 [INFO] - actix_server::worker - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/worker.rs:595 - shutting down idle worker
+2024-12-15 15:19:23 [INFO] - actix_server::worker - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/worker.rs:595 - shutting down idle worker
+2024-12-15 15:19:50 [INFO] - openRD_web_server::handlers::db - src/handlers/db.rs:21 - [APP_INFO] Initializing database connection pool...
+2024-12-15 15:19:51 [INFO] - openRD_web_server::handlers::db - src/handlers/db.rs:52 - [APP_INFO] Running database migrations...
+2024-12-15 15:19:51 [INFO] - openRD_web_server::handlers::db - src/handlers/db.rs:59 - [APP_INFO] Database migrations completed successfully
+2024-12-15 15:19:51 [INFO] - openRD_web_server::handlers::db - src/handlers/db.rs:43 - [APP_INFO] Database pool initialized with size: 10
+2024-12-15 15:19:51 [INFO] - openRD_web_server - src/main.rs:37 - [APP_INFO] Starting HTTP server at http://127.0.0.1:8080
+2024-12-15 15:19:51 [INFO] - actix_server::builder - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/builder.rs:272 - starting 2 workers
+2024-12-15 15:19:51 [INFO] - actix_server::server - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/server.rs:191 - Actix runtime found; starting in Actix runtime
+2024-12-15 15:19:51 [INFO] - actix_server::server - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/server.rs:197 - starting service: "actix-web-service-127.0.0.1:8080", workers: 2, listening on: 127.0.0.1:8080
+2024-12-15 15:20:14 [INFO] - openRD_web_server::handlers::logger - /workspaces/OpenRD-web-server/src/handlers/logger.rs:99 - [APP_INFO] Request: POST /api/v1/users - Status: 500 - Duration: 2ms
+2024-12-15 15:20:30 [INFO] - actix_server::server - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/server.rs:319 - SIGINT received; starting forced shutdown
+2024-12-15 15:20:30 [INFO] - actix_server::worker - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/worker.rs:595 - shutting down idle worker
+2024-12-15 15:20:30 [INFO] - actix_server::accept - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/accept.rs:143 - accept thread stopped
+2024-12-15 15:20:30 [INFO] - actix_server::worker - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/worker.rs:595 - shutting down idle worker
+2024-12-15 15:21:27 [INFO] - openRD_web_server::handlers::db - src/handlers/db.rs:21 - [APP_INFO] Initializing database connection pool...
+2024-12-15 15:21:28 [INFO] - openRD_web_server::handlers::db - src/handlers/db.rs:52 - [APP_INFO] Running database migrations...
+2024-12-15 15:21:28 [INFO] - openRD_web_server::handlers::db - src/handlers/db.rs:59 - [APP_INFO] Database migrations completed successfully
+2024-12-15 15:21:28 [INFO] - openRD_web_server::handlers::db - src/handlers/db.rs:43 - [APP_INFO] Database pool initialized with size: 10
+2024-12-15 15:21:28 [INFO] - openRD_web_server - src/main.rs:37 - [APP_INFO] Starting HTTP server at http://127.0.0.1:8080
+2024-12-15 15:21:28 [INFO] - actix_server::builder - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/builder.rs:272 - starting 2 workers
+2024-12-15 15:21:28 [INFO] - actix_server::server - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/server.rs:191 - Actix runtime found; starting in Actix runtime
+2024-12-15 15:21:28 [INFO] - actix_server::server - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/server.rs:197 - starting service: "actix-web-service-127.0.0.1:8080", workers: 2, listening on: 127.0.0.1:8080
+2024-12-15 15:21:55 [INFO] - openRD_web_server::handlers::logger - /workspaces/OpenRD-web-server/src/handlers/logger.rs:99 - [APP_INFO] Request: POST /api/v1/users - Status: 500 - Duration: 8ms
+2024-12-15 15:23:02 [INFO] - openRD_web_server::handlers::logger - /workspaces/OpenRD-web-server/src/handlers/logger.rs:99 - [APP_INFO] Request: POST /api/v1/users - Status: 500 - Duration: 0ms
+2024-12-15 15:23:23 [INFO] - actix_server::server - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/server.rs:319 - SIGINT received; starting forced shutdown
+2024-12-15 15:23:23 [INFO] - actix_server::accept - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/accept.rs:143 - accept thread stopped
+2024-12-15 15:23:23 [INFO] - actix_server::worker - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/worker.rs:595 - shutting down idle worker
+2024-12-15 15:23:23 [INFO] - actix_server::worker - /home/codespace/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-server-2.5.0/src/worker.rs:595 - shutting down idle worker

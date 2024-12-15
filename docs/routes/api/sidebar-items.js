@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["API_VERSION"],"fn":["configure_routes"],"struct":["hello_world"]};

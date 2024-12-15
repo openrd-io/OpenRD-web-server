@@ -24,3 +24,5 @@ config = "0.14.1"
 uuid = { version = "1.4", features = ["v4"] }
 derive_more = { version = "1.0.0", features = ["display", "error", "from"] }
 cargo-make = "0.37.23"
+# 新增依赖
+fern = "0.7"

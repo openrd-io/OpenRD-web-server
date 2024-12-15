@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["configure_routes"],"struct":["ListMessagesQuery","create_chat_group","create_message","list_messages"]};

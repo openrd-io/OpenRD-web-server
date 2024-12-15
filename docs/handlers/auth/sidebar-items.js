@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["extract_permissions_from_token","generate_token","validate_token"],"struct":["Claims"]};

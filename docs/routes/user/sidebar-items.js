@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["configure_routes"],"struct":["ListUsersQuery","create_user","delete_user","get_user","list_users","update_user"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["ChatGroup","ChatGroupDTO","ChatMessage","ChatMessageDTO","ChatQuery"]};

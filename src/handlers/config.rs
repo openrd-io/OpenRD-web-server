@@ -24,6 +24,7 @@ pub struct ServerConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct LogConfig {
     pub level: String,
+    pub path: String,
 }
 
 impl Config {
@@ -52,6 +53,7 @@ impl Config {
         // 日志配置
         let log = LogConfig {
             level: env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
+            path: env::var("log_file_path").unwrap_or_else(|_| "app.log".to_string()),
         };
 
         Ok(Config {

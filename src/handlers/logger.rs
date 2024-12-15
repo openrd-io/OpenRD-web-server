@@ -1,18 +1,21 @@
-use chrono::Local;
-use env_logger::{Builder, Target};
-use futures_util::future::LocalBoxFuture;
-use log::LevelFilter;
-use std::io::Write;
+// src/logger.rs
 
-// 用于记录请求和响应的中间件
-use actix_web::dev::Service;
-use actix_web::dev::{ServiceRequest, ServiceResponse};
-use actix_web::Error;
-use std::future::{ready, Ready};
+use fern::Dispatch;
+use futures::FutureExt;
+use log::LevelFilter;
+use chrono::Local;
+use std::{boxed, io};
+use actix_web::{dev::{Service, ServiceRequest, ServiceResponse, Transform}, Error};
+use futures_util::future::{ready, Ready};
+use std::task::{Context, Poll};
 
 use crate::log_info;
 
-pub fn init_logger(log_level: &str) {
+/// 初始化日志记录器，配置日志同时输出到控制台和文件
+pub fn init_logger(log_file_path: &str, log_level: &str) {
+    let logfile = fern::log_file(log_file_path)
+        .unwrap_or_else(|_| panic!("无法创建日志文件: {}", log_file_path));
+
     let level = match log_level.to_lowercase().as_str() {
         "trace" => LevelFilter::Trace,
         "debug" => LevelFilter::Debug,
@@ -22,61 +25,60 @@ pub fn init_logger(log_level: &str) {
         _ => LevelFilter::Info,
     };
 
-    Builder::new()
-        .target(Target::Stdout)
-        .format(|buf, record| {
-            writeln!(
-                buf,
+    Dispatch::new()
+        .level(level)
+        .format(|out, message, record| {
+            out.finish(format_args!(
                 "{} [{}] - {} - {}:{} - {}",
                 Local::now().format("%Y-%m-%d %H:%M:%S"),
                 record.level(),
                 record.target(),
                 record.file().unwrap_or("unknown"),
                 record.line().unwrap_or(0),
-                record.args()
-            )
+                message
+            ))
         })
-        .filter(None, level)
-        .init();
-
-    log::info!("Logger initialized with level: {}", log_level);
+        .chain(io::stdout())
+        .chain(logfile)
+        .apply()
+        .expect("无法初始化日志记录器");
 }
 
-pub struct RequestLogger;
+/// 自定义请求日志中间件
+pub struct RequestLoggerMiddleware;
 
-impl<S> actix_web::dev::Transform<S, ServiceRequest> for RequestLogger
+impl<S, B> Transform<S, ServiceRequest> for RequestLoggerMiddleware
 where
-    S: Service<ServiceRequest, Response = ServiceResponse, Error = Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
+    B: 'static,
 {
-    type Response = ServiceResponse;
+    type Response = ServiceResponse<B>;
     type Error = Error;
-    type Transform = RequestLoggerMiddleware<S>;
+    type Transform = RequestLoggerMiddlewareService<S>;
     type InitError = ();
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ready(Ok(RequestLoggerMiddleware { service }))
+        ready(Ok(RequestLoggerMiddlewareService { service }))
     }
 }
 
-pub struct RequestLoggerMiddleware<S> {
+pub struct RequestLoggerMiddlewareService<S> {
     service: S,
 }
 
-impl<S> Service<ServiceRequest> for RequestLoggerMiddleware<S>
+impl<S, B> Service<ServiceRequest> for RequestLoggerMiddlewareService<S>
 where
-    S: Service<ServiceRequest, Response = ServiceResponse, Error = Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
+    B: 'static,
 {
-    type Response = ServiceResponse;
+    type Response = ServiceResponse<B>;
     type Error = Error;
-    type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
+    type Future = futures_util::future::LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
-    fn poll_ready(
-        &self,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(&self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
@@ -87,21 +89,35 @@ where
 
         let fut = self.service.call(req);
 
-        Box::pin(async move {
-            let res = fut.await?;
-            let duration = Local::now()
-                .signed_duration_since(start_time)
-                .num_milliseconds();
-
-            log_info!(
-                "Request: {} {} - Status: {} - Duration: {}ms",
-                method,
-                uri,
-                res.status().as_u16(),
-                duration
-            );
-
-            Ok(res)
-        })
+        fut.map(move |res | {
+            match res {
+                Ok(res) => {                
+                    let duration = Local::now()
+                        .signed_duration_since(start_time)
+                        .num_milliseconds();
+        
+                    log_info!(
+                        "Request: {} {} - Status: {} - Duration: {}ms",
+                        method,
+                        uri,
+                        res.status().as_u16(),
+                        duration
+                    );
+                    Ok(res)
+                },
+                Err(err) => {
+                    log_info!(
+                        "Request: {} {} - Status: 500 - Duration: {}ms, err={}",
+                        method,
+                        uri,
+                        Local::now()
+                            .signed_duration_since(start_time)
+                            .num_milliseconds(),
+                        err.to_string()
+                    );
+                    Err(err)
+                
+            }
+        }}).boxed_local().into()
     }
 }

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["chat_groups","chat_messages","users"]};
