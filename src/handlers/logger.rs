@@ -9,7 +9,7 @@ use actix_web::{dev::{Service, ServiceRequest, ServiceResponse, Transform}, Erro
 use futures_util::future::{ready, Ready};
 use std::task::{Context, Poll};
 
-use crate::log_info;
+use crate::{log_error, log_info, utils::api_response::ApiResponse};
 
 /// 初始化日志记录器，配置日志同时输出到控制台和文件
 pub fn init_logger(log_file_path: &str, log_level: &str) {
@@ -91,22 +91,36 @@ where
 
         fut.map(move |res | {
             match res {
-                Ok(res) => {                
+                Ok(res) => {  
+                    let status = res.status().as_u16();
                     let duration = Local::now()
-                        .signed_duration_since(start_time)
-                        .num_milliseconds();
-        
-                    log_info!(
-                        "Request: {} {} - Status: {} - Duration: {}ms",
-                        method,
-                        uri,
-                        res.status().as_u16(),
-                        duration
-                    );
+                    .signed_duration_since(start_time)
+                    .num_milliseconds();
+
+                    if status >= 200 && status < 300 {
+                        log::info!(
+                            "Request: {} {} - Status: {} - Duration: {}ms",
+                            method,
+                            uri,
+                            status,
+                            duration
+                        );
+                    } else {
+                        log::error!(
+                            "Request: {} {} - Status: {} - Duration: {}ms,msg={}",
+                            method,
+                            uri,
+                            status,
+                            duration,
+                            format!("{:?}", res.response().error())
+                        );
+                        
+                    }                      
                     Ok(res)
+
                 },
                 Err(err) => {
-                    log_info!(
+                    log_error!(
                         "Request: {} {} - Status: 500 - Duration: {}ms, err={}",
                         method,
                         uri,

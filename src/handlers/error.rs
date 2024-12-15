@@ -21,6 +21,9 @@ pub enum AppError {
 
     #[from]
     JwtError(JwtError),
+
+    #[display("db occur error: {_0}")]
+    DBError(DieselError),
 }
 
 impl ResponseError for AppError {
@@ -39,15 +42,15 @@ impl ResponseError for AppError {
                 log_error!("JWT error: {}", e);
                 HttpResponse::Unauthorized().json(ApiResponse::<String>::error("Unauthorized"))
             }
+            AppError::DBError(error) => {                
+                HttpResponse::InternalServerError().json(ApiResponse::<String>::error("Internal Server Error"))
+            },
         }
     }
 }
 
 impl From<DieselError> for AppError {
     fn from(error: DieselError) -> AppError {
-        match error {
-            DieselError::NotFound => AppError::NotFound("Record not found".into()),
-            _ => AppError::InternalServerError,
-        }
+        AppError::DBError(error) 
     }
 }

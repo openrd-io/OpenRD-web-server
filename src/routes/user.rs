@@ -1,6 +1,7 @@
 use crate::handlers::db::DbPool;
 use crate::handlers::error::AppError;
-use crate::models::user::{User, UserDTO};
+use crate::models::user::{UpdateUserDTO, User, UserDTO};
+use crate::utils::api_response::ApiResponse;
 use crate::{log_error, log_info}; // 导入日志宏
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 use actix_web_grants::protect;
@@ -33,7 +34,6 @@ pub async fn create_user(
         log_error!("Failed to get DB connection: {}", e);
         AppError::InternalServerError
     })?;
-
     let user = web::block(move || User::create(&mut conn, &user_dto))
         .await
         .map_err(|e| {
@@ -44,27 +44,27 @@ pub async fn create_user(
 
     log_info!("Successfully created user with id: {}", user.id);
 
-    Ok(HttpResponse::Ok().json(user))
+    Ok(HttpResponse::Ok().json(ApiResponse::success(user.biz_id)))
 }
 
 #[put("/users/{id}")]
 #[protect("USER")]
 pub async fn update_user(
     pool: web::Data<DbPool>,
-    user_id: web::Path<i32>,
-    user_dto: web::Json<UserDTO>,
+    user_id: web::Path<String>,
+    user_dto: web::Json<UpdateUserDTO>,
 ) -> Result<HttpResponse, AppError> {
     let user_id = user_id.into_inner();
     let mut conn = pool.get().expect("couldn't get db connection from pool");
+    let user_id_clone = user_id.clone();
 
-    let user = web::block(move || User::update(&mut conn, user_id, &user_dto))
+    let user = web::block(move || User::update(&mut conn, &user_id_clone, &user_dto))
         .await
         .map_err(|e| {
             log_error!("failed to update user,request id={},error={}", user_id, e);
             AppError::InternalServerError
         })?
         .map_err(AppError::from)?;
-
     Ok(HttpResponse::Ok().json(user))
 }
 
