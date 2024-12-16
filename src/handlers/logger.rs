@@ -93,15 +93,13 @@ where
 
         let fut = self.service.call(req);
 
-
-
         fut.map(move |res| match res {
             Ok(res) => {
                 let status = res.status().as_u16();
                 let duration = Local::now()
                     .signed_duration_since(start_time)
                     .num_milliseconds();
-    
+
                 if status >= 200 && status < 300 {
                     log::info!(
                         "Request: {} {} - Status: {} - Duration: {}ms",

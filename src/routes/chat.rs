@@ -17,17 +17,16 @@ pub struct ListMessagesQuery {
 #[get("/chat/groups")]
 #[protect("USER")]
 async fn query_chat_group_list(
-    pool: web::Data<DbPool>,    
+    pool: web::Data<DbPool>,
     page: web::Query<ListMessagesQuery>,
     user: AuthenticatedUser, // 使用提取器获取用户信息
 ) -> Result<HttpResponse, AppError> {
     let user_id = user.0.sub.clone();
-    
-    let resp: Result<(Vec<ChatGroup>, i64), AppError> = web::block(move || {
-        let mut conn = 
-            pool.get().map_err(|_| AppError::InternalServerError)?;
 
-        let groups = 
+    let resp: Result<(Vec<ChatGroup>, i64), AppError> = web::block(move || {
+        let mut conn = pool.get().map_err(|_| AppError::InternalServerError)?;
+
+        let groups =
             ChatGroup::find_by_user_id(&mut conn, user_id.to_string(), page.page, page.per_page)?;
 
         let count = ChatGroup::count_by_user(&mut conn, user_id.to_string())?;
@@ -99,11 +98,10 @@ async fn list_messages(
     let group_id = group_id.into_inner();
 
     let resp: Result<(Vec<ChatMessage>, i64), AppError> = web::block(move || {
-        
-        let mut conn = 
-            pool.get().map_err(|_| AppError::InternalServerError)?;
+        let mut conn = pool.get().map_err(|_| AppError::InternalServerError)?;
 
-        let messages =  ChatMessage::find_by_group_id(&mut conn, group_id.clone(), query.page, query.per_page)?;
+        let messages =
+            ChatMessage::find_by_group_id(&mut conn, group_id.clone(), query.page, query.per_page)?;
 
         let count = ChatMessage::count_by_group(&mut conn, group_id)?;
 
@@ -111,7 +109,6 @@ async fn list_messages(
     })
     .await
     .map_err(|_| AppError::InternalServerError)?;
-    
 
     let (messages, count) = resp.map_err(AppError::from)?;
 
@@ -119,7 +116,6 @@ async fn list_messages(
         "content": messages,
         "total": count
     });
-
 
     Ok(HttpResponse::Ok().json(resp))
 }

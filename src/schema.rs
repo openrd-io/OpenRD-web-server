@@ -54,8 +54,4 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(
-    chat_groups,
-    chat_messages,
-    users,
-);
+diesel::allow_tables_to_appear_in_same_query!(chat_groups, chat_messages, users,);

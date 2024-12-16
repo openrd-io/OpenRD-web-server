@@ -60,13 +60,13 @@ pub struct ChatMessageDTO {
 impl ChatGroup {
     pub fn create(conn: &mut MysqlConnection, group_dto: &ChatGroupDTO) -> QueryResult<ChatGroup> {
         use crate::schema::chat_groups::dsl::*;
-        
+
         // 如果没有传入 description，则设置为 默认的描述
         let descrips = match &group_dto.description {
             Some(desc) => desc,
             None => "这是一个聊天组",
         };
-         
+
         let new_group = (
             biz_id.eq(Uuid::new_v4().to_string()),
             user_id.eq(group_dto.user_id.clone()),
@@ -141,7 +141,6 @@ impl ChatGroup {
             .select(count(id))
             .first(conn)
     }
-
 }
 
 // ChatMessage 实现
@@ -238,7 +237,8 @@ impl ChatMessage {
         vec![
             "首次使用：我是第一次使用，请告诉我如何开始提问？".to_string(),
             "疾病诊断：我或身边的人似乎得了某种难以诊断的疾病，我想找到病因".to_string(),
-            "医疗救助：我或身边的人已确诊某种罕见病，我想求助对应的医疗机构、官方或民间组织".to_string(),
+            "医疗救助：我或身边的人已确诊某种罕见病，我想求助对应的医疗机构、官方或民间组织"
+                .to_string(),
             "行业支持：我是罕见病领域的从业者，我想了解学习专业详细的行业信息".to_string(),
             "初次了解：我好奇罕见病这个领域，想获取系统的知识".to_string(),
         ]

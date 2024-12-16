@@ -92,12 +92,17 @@ impl User {
     /// 返回创建的用户信息或错误。
     pub fn create(conn: &mut MysqlConnection, user_dto: &UserDTO) -> QueryResult<User> {
         use crate::schema::users::dsl::*;
-       
+
         // 判断用户名或邮箱是否已经存在，如果存在则返回错误
-        if users.filter(name.eq(&user_dto.name)).or_filter(email.eq(&user_dto.email)).first::<User>(conn).is_ok() {
+        if users
+            .filter(name.eq(&user_dto.name))
+            .or_filter(email.eq(&user_dto.email))
+            .first::<User>(conn)
+            .is_ok()
+        {
             return Err(diesel::result::Error::DatabaseError(
-                diesel::result::DatabaseErrorKind::UniqueViolation
-                , Box::new("用户名或邮箱已存在".to_string())
+                diesel::result::DatabaseErrorKind::UniqueViolation,
+                Box::new("用户名或邮箱已存在".to_string()),
             ));
         }
 

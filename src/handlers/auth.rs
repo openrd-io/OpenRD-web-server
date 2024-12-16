@@ -37,7 +37,7 @@ pub async fn extract_permissions_from_token(
                             token_data.claims.role.clone()
                         };
                         // 将用户信息存储在请求的扩展中
-                        req.extensions_mut().insert(token_data.claims);                    
+                        req.extensions_mut().insert(token_data.claims);
                         return Ok(HashSet::from([role]));
                     }
                     Err(_) => {
@@ -102,7 +102,6 @@ pub async fn validate_token(
         }
     }
 }
-
 
 use actix_web::{FromRequest, HttpRequest};
 use futures::future::{ready, Ready};
