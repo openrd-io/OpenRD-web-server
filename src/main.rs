@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use actix_web::{middleware, App, HttpServer};
 use actix_web_grants::GrantsMiddleware;
-use openRD_web_server::handlers::logger::{RequestLoggerMiddleware};
+use openRD_web_server::handlers::logger::RequestLoggerMiddleware;
 use openRD_web_server::handlers::{
     auth::extract_permissions_from_token, config::Config, db::DatabaseManager, logger::init_logger,
 };
@@ -43,8 +43,8 @@ async fn main() -> std::io::Result<()> {
             .wrap(RequestLoggerMiddleware)
             .wrap(GrantsMiddleware::with_extractor(
                 extract_permissions_from_token,
-            ))            
-            .wrap(middleware::NormalizePath::trim())                        
+            ))
+            .wrap(middleware::NormalizePath::trim())
             .configure(routes::api::configure_routes)
     })
     .bind(config.server_address())?

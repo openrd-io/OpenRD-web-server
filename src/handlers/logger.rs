@@ -1,13 +1,16 @@
 // src/logger.rs
 
+use actix_web::{
+    dev::{Service, ServiceRequest, ServiceResponse, Transform},
+    Error,
+};
+use chrono::Local;
 use fern::Dispatch;
 use futures::FutureExt;
-use log::LevelFilter;
-use chrono::Local;
-use std::{boxed, io};
-use actix_web::{dev::{Service, ServiceRequest, ServiceResponse, Transform}, Error};
 use futures_util::future::{ready, Ready};
+use log::LevelFilter;
 use std::task::{Context, Poll};
+use std::{boxed, io};
 
 use crate::{log_error, log_info, utils::api_response::ApiResponse};
 
@@ -76,7 +79,8 @@ where
 {
     type Response = ServiceResponse<B>;
     type Error = Error;
-    type Future = futures_util::future::LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
+    type Future =
+        futures_util::future::LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
@@ -89,49 +93,49 @@ where
 
         let fut = self.service.call(req);
 
-        fut.map(move |res | {
-            match res {
-                Ok(res) => {  
-                    let status = res.status().as_u16();
-                    let duration = Local::now()
+
+
+        fut.map(move |res| match res {
+            Ok(res) => {
+                let status = res.status().as_u16();
+                let duration = Local::now()
                     .signed_duration_since(start_time)
                     .num_milliseconds();
-
-                    if status >= 200 && status < 300 {
-                        log::info!(
-                            "Request: {} {} - Status: {} - Duration: {}ms",
-                            method,
-                            uri,
-                            status,
-                            duration
-                        );
-                    } else {
-                        log::error!(
-                            "Request: {} {} - Status: {} - Duration: {}ms,msg={}",
-                            method,
-                            uri,
-                            status,
-                            duration,
-                            format!("{:?}", res.response().error())
-                        );
-                        
-                    }                      
-                    Ok(res)
-
-                },
-                Err(err) => {
-                    log_error!(
-                        "Request: {} {} - Status: 500 - Duration: {}ms, err={}",
+    
+                if status >= 200 && status < 300 {
+                    log::info!(
+                        "Request: {} {} - Status: {} - Duration: {}ms",
                         method,
                         uri,
-                        Local::now()
-                            .signed_duration_since(start_time)
-                            .num_milliseconds(),
-                        err.to_string()
+                        status,
+                        duration,
                     );
-                    Err(err)
-                
+                } else {
+                    log::error!(
+                        "Request: {} {} - Status: {} - Duration: {}ms,msg={}",
+                        method,
+                        uri,
+                        status,
+                        duration,
+                        format!("{:?}", res.response().error())
+                    );
+                }
+                Ok(res)
             }
-        }}).boxed_local().into()
+            Err(err) => {
+                log_error!(
+                    "Request: {} {} - Status: 500 - Duration: {}ms, err={}",
+                    method,
+                    uri,
+                    Local::now()
+                        .signed_duration_since(start_time)
+                        .num_milliseconds(),
+                    err.to_string()
+                );
+                Err(err)
+            }
+        })
+        .boxed_local()
+        .into()
     }
 }

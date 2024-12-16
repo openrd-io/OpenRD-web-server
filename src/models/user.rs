@@ -1,6 +1,6 @@
 use std::{fmt::format, hash};
 
-use crate::{log_info, schema::users, utils::api_response::ApiResponse};
+use crate::{handlers::error::AppError, log_info, schema::users, utils::api_response::ApiResponse};
 use actix_web::cookie::time::error;
 use chrono::{Local, NaiveDateTime};
 use diesel::prelude::*;
@@ -47,10 +47,9 @@ pub struct UserDTO {
     pub password: String, // 新增的字段
 }
 
-
 /// 用户数据传输对象，用于更新用户记录，所有字段可选。
 /// 用户数据传输对象，用于更新用户记录，所有字段可选。
-#[derive(Clone,Debug, Serialize, Deserialize, AsChangeset)]
+#[derive(Clone, Debug, Serialize, Deserialize, AsChangeset)]
 #[diesel(table_name = users)]
 pub struct UpdateUserDTO {
     pub name: Option<String>,
@@ -93,6 +92,14 @@ impl User {
     /// 返回创建的用户信息或错误。
     pub fn create(conn: &mut MysqlConnection, user_dto: &UserDTO) -> QueryResult<User> {
         use crate::schema::users::dsl::*;
+       
+        // 判断用户名或邮箱是否已经存在，如果存在则返回错误
+        if users.filter(name.eq(&user_dto.name)).or_filter(email.eq(&user_dto.email)).first::<User>(conn).is_ok() {
+            return Err(diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::UniqueViolation
+                , Box::new("用户名或邮箱已存在".to_string())
+            ));
+        }
 
         let hashed_password = bcrypt::hash(&user_dto.password, bcrypt::DEFAULT_COST).unwrap();
 
@@ -113,7 +120,6 @@ impl User {
         };
 
         users.order(id.desc()).first(conn)
-
     }
     /// 更新现有的用户记录，并在必要时更新密码为哈希后的密码。
     ///
@@ -126,32 +132,40 @@ impl User {
     /// # 返回
     ///
     /// 返回更新后的用户信息或错误。
-    pub fn update(conn: &mut MysqlConnection, user_id: &str, update_dto: &UpdateUserDTO) -> QueryResult<User> {
+    pub fn update(
+        conn: &mut MysqlConnection,
+        user_id: &str,
+        update_dto: &UpdateUserDTO,
+    ) -> QueryResult<User> {
         let mut update_dto = update_dto.clone();
         use crate::schema::users::dsl::*;
-    
+
         // 如果提供了密码，则进行哈希处理
         if let Some(ref pwd) = update_dto.password {
             match bcrypt::hash(pwd, bcrypt::DEFAULT_COST) {
                 Ok(hash) => {
                     update_dto.password = Some(hash);
-                },
+                }
                 Err(e) => {
                     log::error!("密码哈希失败: {}", e);
                     return Err(diesel::result::Error::NotFound);
                 }
             }
         }
-    
+
         // 尝试更新用户，如果失败则记录错误日志并返回错误
-        if let Err(e) = diesel::update(users.filter(biz_id.eq(user_id)).filter(deleted_flag.eq(false)))
-            .set(update_dto) // 传递拥有所有权的 `UpdateUserDTO`
-            .execute(conn)
+        if let Err(e) = diesel::update(
+            users
+                .filter(biz_id.eq(user_id))
+                .filter(deleted_flag.eq(false)),
+        )
+        .set(update_dto) // 传递拥有所有权的 `UpdateUserDTO`
+        .execute(conn)
         {
             log::error!("更新用户失败: {}", e);
             return Err(e);
         }
-    
+
         // 返回更新后的用户
         users.filter(biz_id.eq(user_id)).first(conn)
     }

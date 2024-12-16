@@ -42,15 +42,16 @@ impl ResponseError for AppError {
                 log_error!("JWT error: {}", e);
                 HttpResponse::Unauthorized().json(ApiResponse::<String>::error("Unauthorized"))
             }
-            AppError::DBError(error) => {                
-                HttpResponse::InternalServerError().json(ApiResponse::<String>::error("Internal Server Error"))
-            },
+            AppError::DBError(error) => {
+                HttpResponse::InternalServerError()
+                    .json(ApiResponse::<String>::error("Internal Server Error"))
+            }
         }
     }
 }
 
 impl From<DieselError> for AppError {
     fn from(error: DieselError) -> AppError {
-        AppError::DBError(error) 
+        AppError::DBError(error)
     }
 }

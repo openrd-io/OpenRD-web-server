@@ -5,7 +5,8 @@ diesel::table! {
         id -> Integer,
         #[max_length = 64]
         biz_id -> Varchar,
-        user_id -> Integer,
+        #[max_length = 64]
+        user_id -> Varchar,
         #[max_length = 255]
         title -> Varchar,
         description -> Nullable<Text>,
@@ -20,7 +21,8 @@ diesel::table! {
         id -> Integer,
         #[max_length = 64]
         biz_id -> Varchar,
-        group_id -> Integer,
+        #[max_length = 64]
+        group_id -> VarChar,
         #[max_length = 20]
         role -> Varchar,
         content -> Text,
@@ -52,7 +54,8 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(chat_groups -> users (user_id));
-diesel::joinable!(chat_messages -> chat_groups (group_id));
-
-diesel::allow_tables_to_appear_in_same_query!(chat_groups, chat_messages, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    chat_groups,
+    chat_messages,
+    users,
+);

@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::env;
 
+use actix_web::HttpMessage;
 use actix_web::{dev::ServiceRequest, Error};
 use actix_web_httpauth::extractors::bearer::{self, BearerAuth};
 use actix_web_httpauth::extractors::AuthenticationError;
@@ -9,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::log_error;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub sub: String,  // user id
     pub role: String, // role
@@ -33,8 +34,10 @@ pub async fn extract_permissions_from_token(
                         let role = if token_data.claims.role.is_empty() {
                             "USER".to_string()
                         } else {
-                            token_data.claims.role
+                            token_data.claims.role.clone()
                         };
+                        // 将用户信息存储在请求的扩展中
+                        req.extensions_mut().insert(token_data.claims);                    
                         return Ok(HashSet::from([role]));
                     }
                     Err(_) => {
@@ -97,5 +100,25 @@ pub async fn validate_token(
             log_error!("Token validation failed: {}", e);
             Err((AuthenticationError::from(config).into(), req))
         }
+    }
+}
+
+
+use actix_web::{FromRequest, HttpRequest};
+use futures::future::{ready, Ready};
+
+use super::error::AppError;
+
+pub struct AuthenticatedUser(pub Claims);
+
+impl FromRequest for AuthenticatedUser {
+    type Error = AppError;
+    type Future = Ready<Result<Self, Self::Error>>;
+
+    fn from_request(req: &HttpRequest, _: &mut actix_web::dev::Payload) -> Self::Future {
+        if let Some(claims) = req.extensions().get::<Claims>() {
+            return ready(Ok(AuthenticatedUser((*claims).clone())));
+        }
+        ready(Err(AppError::Unauthorized))
     }
 }

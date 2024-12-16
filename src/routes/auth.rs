@@ -17,7 +17,7 @@ pub struct LoginRequest {
 #[derive(Serialize)]
 pub struct LoginResponse {
     token: String,
-    user_id: i32,
+    user_id: String,
 }
 
 #[post("/auth/login")]
@@ -45,12 +45,12 @@ async fn login(
     };
 
     // 生成带角色的 token
-    let token = generate_token(&user.id.to_string(), &role)?;
+    let token = generate_token(&user.biz_id, &role)?;
 
     // 返回响应
     Ok(HttpResponse::Ok().json(LoginResponse {
         token,
-        user_id: user.id,
+        user_id: user.biz_id,
     }))
 }
 
